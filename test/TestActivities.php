@@ -92,10 +92,39 @@ function test_HamtaEnAktivitet(): string {
 function test_SparaNyAktivitet(): string {
     $retur = "<h2>test_SparaNyAktivitet</h2>";
 
+    $db = connectDb();
     try {
-        $retur .= "<p class='error'>Inga tester implementerade</p>";
+        // Skapa transaktion!
+        $db->beginTransaction();
+
+        // Testa spara tom aktivitet
+        $svar = sparaNyAktivitet("");
+        if ($svar->getStatus() == 400) {
+            $retur .= "<p class='ok'>Testa spara tom aktivitet misslyckades, som förväntat</p>";
+        } else {
+            $retur .= "<p class='error'>Testa spara tom aktivitet misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Testa spara ny aktivitet och lyckas
+        $varde = "test" . strtotime("now");
+        $svar = sparaNyAktivitet($varde);
+        if ($svar->getStatus() == 200) {
+            $retur .= "<p class='ok'>Spara ny aktivitet lyckades</p>";
+        } else {
+            $retur .= "<p class='error'>Spara ny aktivitet misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Testa spara samma aktivitet och misslyckas
+        $svar = sparaNyAktivitet($varde);
+        if ($svar->getStatus() == 400) {
+            $retur .= "<p class='ok'>Testa spara samma aktivitet misslyckades, som förväntat</p>";
+        } else {
+            $retur .= "<p class='error'>Testa spara samma aktivitet misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
     } catch (Exception $ex) {
         $retur .= "<p class='error'>Något gick fel, meddelandet säger:<br> {$ex->getMessage()}</p>";
+    } finally {
+        $db->rollback();
     }
 
     return $retur;
