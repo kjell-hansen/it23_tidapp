@@ -208,7 +208,48 @@ function test_UppdateraAktivitet(): string {
 function test_RaderaAktivitet(): string {
     $retur = "<h2>test_RaderaAktivitet</h2>";
     try {
-        $retur .= "<p class='error'>Inga tester implementerade</p>";
+        // Misslyckas med att radera id=-1
+        $svar=raderaAktivitet("-1");
+        if ($svar->getStatus() == 400) {
+            $retur .="<p class='ok'>Radera aktivitet med id=-1 misslyckades som förväntat</p>";
+        } else {
+            $retur .="<p class='error>Radera aktivitet med id=-1 misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Misslyckas med att radera id=sju
+        $svar=raderaAktivitet("sju");
+        if ($svar->getStatus() == 400) {
+            $retur .="<p class='ok'>Radera aktivitet med id=sju misslyckades som förväntat</p>";
+        } else {
+            $retur .="<p class='error>Radera aktivitet med id=sju misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Lyckas med att radera befintlig post
+        $aktivitet="test" . strtotime("now");
+        $nyPost=sparaNyAktivitet($aktivitet);
+        $nyttId=$nyPost->getContent()->id;
+        $svar=raderaAktivitet($nyttId);
+        if($svar->getStatus() == 200){
+            if($svar->getContent()->result) {
+                $retur .= "<p class='ok'>Radera aktivitet lyckades</p>";
+            } else {
+                $retur .="<p class='error'>Radera aktivitet misslyckades, result=false</p>";
+            }
+        } else {
+            $retur .="<p class='error'>Radera aktivitet misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Misslyckas med att radera post som inte finns
+        $svar=raderaAktivitet($nyttId);
+        if($svar->getStatus() == 200){
+            if($svar->getContent()->result===false) {
+                $retur .= "<p class='ok'>Radera aktivitet misslyckades, som förväntat</p>";
+            } else {
+                $retur .="<p class='error'>Radera aktivitet misslyckades, result=true</p>";
+            }
+        } else {
+            $retur .="<p class='error'>Radera aktivitet misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
     } catch (Exception $ex) {
         $retur .= "<p class='error'>Något gick fel, meddelandet säger:<br> {$ex->getMessage()}</p>";
     }
