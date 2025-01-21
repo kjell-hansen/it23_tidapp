@@ -137,10 +137,65 @@ function test_SparaNyAktivitet(): string {
 function test_UppdateraAktivitet(): string {
     $retur = "<h2>test_UppdateraAktivitet</h2>";
 
+    // Skapa transaktion
+    $db=connectDb();
+    $db->beginTransaction();
+
     try {
-        $retur .= "<p class='error'>Inga tester implementerade</p>";
+        // Misslyckas med att uppdatera post med id=-1
+        $svar=uppdateraAktivitet("-1", "Någon aktivitet");
+        if ($svar->getStatus() == 400) {
+            $retur .="<p class='ok'>Uppdatera aktivitet med id=-1 misslyckades som förväntat</p>";
+        } else {
+            $retur .="<p class='error>Uppdatera aktivitet med id=-1 misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Misslyckas med att uppdatera post med id=åtta
+        $svar=uppdateraAktivitet("åtta", "Någon aktivitet");
+        if ($svar->getStatus() == 400) {
+            $retur .="<p class='ok'>Uppdatera aktivitet med id=åtta misslyckades som förväntat</p>";
+        } else {
+            $retur .="<p class='error>Uppdatera aktivitet med id=åtta misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Misslyckas med att uppdatera post med tom aktivitet
+        $svar=uppdateraAktivitet("5", "");
+        if ($svar->getStatus() == 400) {
+            $retur .="<p class='ok'>Uppdatera aktivitet med tom aktivitet misslyckades som förväntat</p>";
+        } else {
+            $retur .="<p class='error>Uppdatera aktivitet med tom aktivitet misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Lyckas med att uppdatera befintlig post
+        $aktivitet="test" . strtotime("now");
+        $nyPost=sparaNyAktivitet($aktivitet);
+        $nyttId=$nyPost->getContent()->id;
+        $svar=uppdateraAktivitet($nyttId, $aktivitet ."1");
+        if($svar->getStatus() == 200){
+            if($svar->getContent()->result) {
+                $retur .= "<p class='ok'>Uppdatera aktivitet lyckades</p>";
+            } else {
+                $retur .="<p class='error'>Uppdatera aktivitet misslyckades, result=false</p>";
+            }
+        } else {
+            $retur .="<p class='error'>Uppdatera aktivitet misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Misslyckas med att uppdatera post där aktiviteten inte ändrats
+       $svar=uppdateraAktivitet($nyttId, $aktivitet ."1");
+        if($svar->getStatus() == 200){
+            if($svar->getContent()->result===false) {
+                $retur .= "<p class='ok'>Uppdatera aktivitet misslyckades som förväntat</p>";
+            } else {
+                $retur .="<p class='error'>Uppdatera aktivitet misslyckades, result=true</p>";
+            }
+        } else {
+            $retur .="<p class='error'>Uppdatera aktivitet misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
     } catch (Exception $ex) {
         $retur .= "<p class='error'>Något gick fel, meddelandet säger:<br> {$ex->getMessage()}</p>";
+    } finally {
+        $db->rollback();
     }
 
     return $retur;

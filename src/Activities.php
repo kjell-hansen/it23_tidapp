@@ -136,7 +136,7 @@ function sparaNyAktivitet(string $aktivitet): Response {
         return new Response($retur);
     } catch (Exception $exc) {
         $retur = new stdClass();
-        $retur->error=['Spara misslyckades', $exc->getMessage()];
+        $retur->error = ['Spara misslyckades', $exc->getMessage()];
         return new Response($retur, 400);
     }
 }
@@ -148,6 +148,43 @@ function sparaNyAktivitet(string $aktivitet): Response {
  * @return Response
  */
 function uppdateraAktivitet(string $id, string $aktivitet): Response {
+    // Kontrollera indata
+    $kontrolleradId = filter_var($id, FILTER_VALIDATE_INT);
+    if ($kontrolleradId === false || $kontrolleradId < 1) {
+        $retur = new stdClass();
+        $retur->error = ["Bad request", "Ogiltigt id"];
+        return new Response($retur, 400);
+    }
+
+    // Rensa onödiga tecken
+    $kontrolleradAktivitet = filter_var($aktivitet, FILTER_SANITIZE_SPECIAL_CHARS);
+    // Kontrollera att aktiviteten inte är tom
+    if (trim($kontrolleradAktivitet) === '') {
+        $retur = new stdClass();
+        $retur->error = ["Bad request", "Aktivitet får inte vara tom"];
+        return new Response($retur, 400);
+    }
+
+    // Koppla mot databas
+    $db = connectDb();
+
+    // Skicka fråga
+    $stmt = $db->prepare("UPDATE aktiviteter SET aktivitet=:aktivitet WHERE id=:id");
+    $stmt->execute(["aktivitet" => $kontrolleradAktivitet, "id" => $kontrolleradId]);
+
+    // Kontrollera svar
+    if ($stmt->rowCount() === 1) {
+        $retur = new stdClass();
+        $retur->result = true;
+        $retur->message = ['Spara lyckades', '1 post uppdaterades'];
+    } else {
+        $retur = new stdClass();
+        $retur->result = false;
+        $retur->message = ['Spara misslyckades', 'Ingen post uppdaterades'];
+    }
+
+    // Returnera svar
+    return new Response($retur);
 }
 
 /**
