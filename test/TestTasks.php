@@ -20,12 +20,45 @@ function allaTaskTester(): string {
 
 /**
  * Tester för funktionen hämta uppgifter för ett angivet sidnummer
- * @return string html-sträng med alla resultat för testerna 
+ * @return string html-sträng med alla resultat för testerna
  */
 function test_HamtaUppgifterSida(): string {
     $retur = "<h2>test_HamtaUppgifterSida</h2>";
     try {
-        $retur .= "<p class='error'>Inga tester implementerade</p>";
+        // Testa felaktigt sidnummer -1
+        $svar = hamtaSida("-1");
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Hämta sida som inte finns (-1) misslyckades som förväntat</p>";
+        } else {
+            $retur .= "<p class=error'>Hämta sida som inte finns misslyckades, status: " . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Testa felaktigt sidnummer sju
+        $svar = hamtaSida("sju");
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Hämta sida som inte finns (sju) misslyckades som förväntat</p>";
+        } else {
+            $retur .= "<p class=error'>Hämta sida som inte finns misslyckades, status: " . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Testa sida som finns (1)
+        $svar = hamtaSida("1");
+        $maxSidaNr = 0;
+        if ($svar->getStatus() === 200) {
+            $retur .= "<p class='ok'>Hämta sida 1 lyckades</p>";
+            $maxSidaNr = $svar->getContent()->pages + 1;
+        } else {
+            $retur .= "<p class='error'>Hämta sida 1 misslyckades, status=" . $svar->getStatus() . " returnerades </p>";
+            return $retur;
+        }
+
+        // Testa sida som inte finns
+        $svar = hamtaSida((string)$maxSidaNr);
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Hämta sida som inte finns ($maxSidaNr) misslyckades som förväntat</p>";
+        } else {
+            $retur .= "<p class='error'>Hämta sida som inte ($maxSidaNr) finns misslyckades, status: " . $svar->getStatus() . " returnerades</p>";
+        }
     } catch (Exception $ex) {
         $retur .= "<p class='error'>Något gick fel, meddelandet säger:<br> {$ex->getMessage()}</p>";
     }
