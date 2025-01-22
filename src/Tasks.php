@@ -114,7 +114,63 @@ function hamtaSida(string $sida): Response {
  * @return Response
  */
 function hamtaDatum(string $from, string $tom): Response {
+    // Kontrollera indata
+    $kontrolleradFrom=DateTimeImmutable::createFromFormat('Y-m-d', $from);
+    $kontrolleradTom=DateTimeImmutable::createFromFormat('Y-m-d', $tom);
 
+    // Skicka fel om from eller tom är false, eller felaktiga
+    $datumFel=[];
+    if($kontrolleradFrom===false) {
+        $datumFel[]="Felaktigt angivet från-datum";
+    }
+    if($kontrolleradTom===false) {
+        $datumFel[]="Felaktigt angivet till-datum";
+    }
+    if($kontrolleradFrom && $kontrolleradFrom->format("Y-m-d")!==$from) {
+        $datumFel[]="$from är inget giltigt datum";
+    }
+    if($kontrolleradTom && $kontrolleradTom->format("Y-m-d")!==$tom) {
+        $datumFel[]="$tom är inget giltigt datum";
+    }
+    // Skicka fel om from>tom
+    if($kontrolleradFrom && $kontrolleradTom &&
+        $kontrolleradFrom->format("Y-m-d") > $kontrolleradTom->format("Y-m-d")) {
+        $datumFel[]="Fråndatum ($from) ska vara mindre än tilldatum ($tom)";
+    }
+
+    if(count($datumFel)>0) {
+        $retur = new stdClass();
+        array_unshift($datumFel,"Bad request");
+        $retur->error=$datumFel;
+        return new Response($retur, 400);
+    }
+
+    // Koppla mot databas
+    $db = connectDb();
+
+    // Hämta poster
+    $stmt=$db->prepare("SELECT uppgifter.id, aktivitetsid, datum, tid, beskrivning, aktivitet 
+    FROM uppgifter INNER JOIN aktiviteter ON uppgifter.aktivitetsid = aktiviteter.id
+    WHERE datum BETWEEN :from AND :tom
+    ORDER BY datum, uppgifter.id ASC");
+
+    $stmt->execute(['from'=>$kontrolleradFrom->format('Y-m-d'), 'tom'=>$kontrolleradTom->format('Y-m-d')    ]);
+    $allaRader=$stmt->fetchAll();
+
+    $tasks = [];
+    foreach ($allaRader as $post){
+        $task = new stdClass();
+        $task->id = $post['id'];
+        $task->activityId = $post['aktivitetsid'];
+        $task->date = $post['datum'];
+        $task->time = substr($post['tid'], 0, -3);
+        $task->activity = $post['aktivitet'];
+        $task->description = $post['beskrivning'] ?? '';
+        $tasks[] = $task;
+    }
+
+    // Returnera svar
+    return new Response($tasks, 200);
 }
 
 /**
