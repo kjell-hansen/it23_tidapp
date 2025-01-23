@@ -171,7 +171,30 @@ function test_HamtaEnUppgift(): string {
     $retur = "<h2>test_HamtaEnUppgift</h2>";
 
     try {
-        $retur .= "<p class='error'>Inga tester implementerade</p>";
+        // Misslyckas med att hämta felaktigt id (-1)
+        $svar=hamtaEnskildUppgift("-1");
+        if($svar->getStatus() === 400){
+            $retur .="<p class='ok'>Hämta post med felaktigt id (-1) misslyckades, som förväntat</p>";
+        } else {
+            $retur .="<p class='error'>Hämta post med felatkigt id (-1) misslyckades, status="
+                . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Misslyckas med att hämta felaktigt id (sju)
+        $svar=hamtaEnskildUppgift("sju");
+        if($svar->getStatus() === 400){
+            $retur .="<p class='ok'>Hämta post med felaktigt id (sju) misslyckades, som förväntat</p>";
+        } else {
+            $retur .="<p class='error'>Hämta post med felatkigt id (sju) misslyckades, status="
+                . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Lyckas med att hämta post som finns
+
+        // Misslyckas med att hämta post som inte finns
+
+
+        $retur .= "<p class='error'>Övriga tester inte implementerade</p>";
     } catch (Exception $ex) {
         $retur .= "<p class='error'>Något gick fel, meddelandet säger:<br> {$ex->getMessage()}</p>";
     }

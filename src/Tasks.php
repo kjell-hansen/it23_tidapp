@@ -33,7 +33,6 @@ function tasklists(Route $route): Response {
  * @return Response
  */
 function tasks(Route $route, array $postData): Response {
-    return new Response("Tasks");
     try {
         if (count($route->getParams()) === 1 && $route->getMethod() === RequestMethod::GET) {
             return hamtaEnskildUppgift($route->getParams()[0]);
@@ -115,33 +114,33 @@ function hamtaSida(string $sida): Response {
  */
 function hamtaDatum(string $from, string $tom): Response {
     // Kontrollera indata
-    $kontrolleradFrom=DateTimeImmutable::createFromFormat('Y-m-d', $from);
-    $kontrolleradTom=DateTimeImmutable::createFromFormat('Y-m-d', $tom);
+    $kontrolleradFrom = DateTimeImmutable::createFromFormat('Y-m-d', $from);
+    $kontrolleradTom = DateTimeImmutable::createFromFormat('Y-m-d', $tom);
 
     // Skicka fel om from eller tom är false, eller felaktiga
-    $datumFel=[];
-    if($kontrolleradFrom===false) {
-        $datumFel[]="Felaktigt angivet från-datum";
+    $datumFel = [];
+    if ($kontrolleradFrom === false) {
+        $datumFel[] = "Felaktigt angivet från-datum";
     }
-    if($kontrolleradTom===false) {
-        $datumFel[]="Felaktigt angivet till-datum";
+    if ($kontrolleradTom === false) {
+        $datumFel[] = "Felaktigt angivet till-datum";
     }
-    if($kontrolleradFrom && $kontrolleradFrom->format("Y-m-d")!==$from) {
-        $datumFel[]="$from är inget giltigt datum";
+    if ($kontrolleradFrom && $kontrolleradFrom->format("Y-m-d") !== $from) {
+        $datumFel[] = "$from är inget giltigt datum";
     }
-    if($kontrolleradTom && $kontrolleradTom->format("Y-m-d")!==$tom) {
-        $datumFel[]="$tom är inget giltigt datum";
+    if ($kontrolleradTom && $kontrolleradTom->format("Y-m-d") !== $tom) {
+        $datumFel[] = "$tom är inget giltigt datum";
     }
     // Skicka fel om from>tom
-    if($kontrolleradFrom && $kontrolleradTom &&
+    if ($kontrolleradFrom && $kontrolleradTom &&
         $kontrolleradFrom->format("Y-m-d") > $kontrolleradTom->format("Y-m-d")) {
-        $datumFel[]="Fråndatum ($from) ska vara mindre än tilldatum ($tom)";
+        $datumFel[] = "Fråndatum ($from) ska vara mindre än tilldatum ($tom)";
     }
 
-    if(count($datumFel)>0) {
+    if (count($datumFel) > 0) {
         $retur = new stdClass();
-        array_unshift($datumFel,"Bad request");
-        $retur->error=$datumFel;
+        array_unshift($datumFel, "Bad request");
+        $retur->error = $datumFel;
         return new Response($retur, 400);
     }
 
@@ -149,16 +148,16 @@ function hamtaDatum(string $from, string $tom): Response {
     $db = connectDb();
 
     // Hämta poster
-    $stmt=$db->prepare("SELECT uppgifter.id, aktivitetsid, datum, tid, beskrivning, aktivitet 
+    $stmt = $db->prepare("SELECT uppgifter.id, aktivitetsid, datum, tid, beskrivning, aktivitet 
     FROM uppgifter INNER JOIN aktiviteter ON uppgifter.aktivitetsid = aktiviteter.id
     WHERE datum BETWEEN :from AND :tom
     ORDER BY datum, uppgifter.id ASC");
 
-    $stmt->execute(['from'=>$kontrolleradFrom->format('Y-m-d'), 'tom'=>$kontrolleradTom->format('Y-m-d')    ]);
-    $allaRader=$stmt->fetchAll();
+    $stmt->execute(['from' => $kontrolleradFrom->format('Y-m-d'), 'tom' => $kontrolleradTom->format('Y-m-d')]);
+    $allaRader = $stmt->fetchAll();
 
     $tasks = [];
-    foreach ($allaRader as $post){
+    foreach ($allaRader as $post) {
         $task = new stdClass();
         $task->id = $post['id'];
         $task->activityId = $post['aktivitetsid'];
@@ -179,6 +178,41 @@ function hamtaDatum(string $from, string $tom): Response {
  * @return Response
  */
 function hamtaEnskildUppgift(string $id): Response {
+    // Kontrollera indata
+    $kontrolleradId = filter_var($id, FILTER_SANITIZE_NUMBER_INT);
+    if ($kontrolleradId === false || $kontrolleradId < 1) {
+        $retur = new stdClass();
+        $retur->error = ["Bad request", "Felaktigt angivet id"];
+        return new Response($retur, 400);
+    }
+
+    // Koppla databas
+    $db = connectDb();
+
+    // Skicka fråga
+    $stmt=$db->prepare("SELECT uppgifter.id, aktivitetsid, datum, tid, beskrivning, aktivitet
+    FROM uppgifter INNER JOIN aktiviteter ON uppgifter.aktivitetsid = aktiviteter.id 
+    WHERE uppgifter.id=:id");
+    $stmt->execute(['id' => $kontrolleradId]);
+
+    // Ta emot svar
+    if($stmt->rowCount() === 0) {
+        $retur = new stdClass();
+        $retur->error=["Bad request", "Post saknas"];
+        return new Response($retur, 400);
+    } else {
+        $post=$stmt->fetch();
+        $retur = new stdClass();
+        $retur->id = $post['id'];
+        $retur->activityId = $post['aktivitetsid'];
+        $retur->date = $post['datum'];
+        $retur->time = substr($post['tid'], 0, -3);
+        $retur->activity = $post['aktivitet'];
+        $retur->description = $post['beskrivning'] ?? '';
+    }
+
+    // Returnera svar
+    return new Response($retur, 200);
 
 }
 
