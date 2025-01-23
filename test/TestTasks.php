@@ -73,7 +73,89 @@ function test_HamtaUppgifterSida(): string {
 function test_HamtaAllaUppgifterDatum(): string {
     $retur = "<h2>test_HamtaAllaUppgifterDatum</h2>";
     try {
-        $retur .= "<p class='error'>Inga tester implementerade</p>";
+        // Testa felaktiga indatum
+        $svar = hamtaDatum("1", "2");
+        if ($svar->getStatus() === 400) {
+            if (count($svar->getContent()->error) === 3) {
+                $retur .= "<p class='ok'>Hämta uppgifter med felaktiga datum (1,2) misslyckades som förväntat</p>";
+            } else {
+                $retur .= "<p class='error'>Hämta uppgifter med felaktiga datum (1,2) returnerade "
+                    . count($svar->getContent()->error) . " fel istället för de förväntade 3</p>";
+            }
+        } else {
+            $retur .= "<p class='error'>Hämta uppgifter med felaktiga datum (1,2) misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+        $svar = hamtaDatum("1", "2025-01-01");
+        if ($svar->getStatus() === 400) {
+            if (count($svar->getContent()->error) === 2) {
+                $retur .= "<p class='ok'>Hämta uppgifter med felaktiga datum (1,2025-01-01) misslyckades som förväntat</p>";
+            } else {
+                $retur .= "<p class='error'>Hämta uppgifter med felaktiga datum (1,2025-01-01) returnerade "
+                    . count($svar->getContent()->error) . " fel istället för de förväntade 2</p>";
+            }
+        } else {
+            $retur .= "<p class='error'>Hämta uppgifter med felaktiga datum (1,2025-01-01) misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+    $svar = hamtaDatum("2025-01-01","1");
+        if ($svar->getStatus() === 400) {
+            if (count($svar->getContent()->error) === 2) {
+                $retur .= "<p class='ok'>Hämta uppgifter med felaktiga datum (2025-01-01,1) misslyckades som förväntat</p>";
+            } else {
+                $retur .= "<p class='error'>Hämta uppgifter med felaktiga datum (2025-01-01,1) returnerade "
+                    . count($svar->getContent()->error) . " fel istället för de förväntade 2</p>";
+            }
+        } else {
+            $retur .= "<p class='error'>Hämta uppgifter med felaktiga datum (2025-01-01,1) misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Testa ogiltiga datum
+    $svar = hamtaDatum("2025-01-01","2025-01-37");
+        if ($svar->getStatus() === 400) {
+            if (count($svar->getContent()->error) === 2) {
+                $retur .= "<p class='ok'>Hämta uppgifter med felaktiga datum (2025-01-01,2025-01-37) misslyckades som förväntat</p>";
+            } else {
+                $retur .= "<p class='error'>Hämta uppgifter med felaktiga datum (2025-01-01,2025-01-37) returnerade "
+                    . count($svar->getContent()->error) . " fel istället för de förväntade 2</p>";
+            }
+        } else {
+            $retur .= "<p class='error'>Hämta uppgifter med felaktiga datum (2025-01-01,2025-01-37) misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+    $svar = hamtaDatum("2024-12-37","2025-01-27");
+        if ($svar->getStatus() === 400) {
+            if (count($svar->getContent()->error) === 2) {
+                $retur .= "<p class='ok'>Hämta uppgifter med felaktiga datum (2024-12-37,2025-01-27) misslyckades som förväntat</p>";
+            } else {
+                $retur .= "<p class='error'>Hämta uppgifter med felaktiga datum (2024-12-37,2025-01-27) returnerade "
+                    . count($svar->getContent()->error) . " fel istället för de förväntade 2</p>";
+            }
+        } else {
+            $retur .= "<p class='error'>Hämta uppgifter med felaktiga datum (2024-12-37,2025-01-27) misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Testa från större än till
+    $svar = hamtaDatum("2025-12-27","2025-01-27");
+        if ($svar->getStatus() === 400) {
+            if (count($svar->getContent()->error) === 2) {
+                $retur .= "<p class='ok'>Hämta uppgifter med felaktiga datum (2025-12-27,2025-01-27) misslyckades som förväntat</p>";
+            } else {
+                $retur .= "<p class='error'>Hämta uppgifter med felaktiga datum (2025-12-27,2025-01-27) returnerade "
+                    . count($svar->getContent()->error) . " fel istället för de förväntade 2</p>";
+            }
+        } else {
+            $retur .= "<p class='error'>Hämta uppgifter med felaktiga datum (2025-12-27,2025-01-27) misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
+        }
+
+        // Testa korrekta datum
+        $svar=hamtaDatum("2024-01-01","2025-01-01");
+        if($svar->getStatus() === 200){
+            $retur .="<p class='ok'>Hämta uppgifter med datum (2024-01-01,2025-01-01) lyckades</p>";
+        } else {
+            $retur .="<p class='error'>Hämta uppgifter med datum (2024-01-01,2025-01-01) misslyckades"
+                . ", status=" . $svar->getStatus() . " returnerades</p>";
+        }
     } catch (Exception $ex) {
         $retur .= "<p class='error'>Något gick fel, meddelandet säger:<br> {$ex->getMessage()}</p>";
     }
