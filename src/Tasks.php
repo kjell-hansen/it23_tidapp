@@ -190,18 +190,18 @@ function hamtaEnskildUppgift(string $id): Response {
     $db = connectDb();
 
     // Skicka fråga
-    $stmt=$db->prepare("SELECT uppgifter.id, aktivitetsid, datum, tid, beskrivning, aktivitet
+    $stmt = $db->prepare("SELECT uppgifter.id, aktivitetsid, datum, tid, beskrivning, aktivitet
     FROM uppgifter INNER JOIN aktiviteter ON uppgifter.aktivitetsid = aktiviteter.id 
     WHERE uppgifter.id=:id");
     $stmt->execute(['id' => $kontrolleradId]);
 
     // Ta emot svar
-    if($stmt->rowCount() === 0) {
+    if ($stmt->rowCount() === 0) {
         $retur = new stdClass();
-        $retur->error=["Bad request", "Post saknas"];
+        $retur->error = ["Bad request", "Post saknas"];
         return new Response($retur, 400);
     } else {
-        $post=$stmt->fetch();
+        $post = $stmt->fetch();
         $retur = new stdClass();
         $retur->id = $post['id'];
         $retur->activityId = $post['aktivitetsid'];
@@ -222,7 +222,53 @@ function hamtaEnskildUppgift(string $id): Response {
  * @return Response
  */
 function sparaNyUppgift(array $postData): Response {
+    // Kontrollera indata
+    $koll = kontrolleraPostdata($postData);
+    if ($koll) {
+        $retur = new stdClass();
+        array_unshift($koll, "Bad request");
+        $retur->error = $koll;
+        return new Response($retur, 400);
+    }
 
+    try {
+        // Koppla databas
+        $db = connectDb();
+
+        // Spara post
+        $stmt = $db->prepare("INSERT INTO uppgifter (datum, tid, aktivitetsid, beskrivning) 
+                    VALUES (:datum, :tid, :aktivitetsid, :beskrivning)");
+        if (isset($postData['description'])) {
+            $stmt->execute(["datum" => $postData['date'],
+                "tid" => $postData['time'],
+                "aktivitetsid" => $postData['activityId'],
+                "beskrivning" => filter_var($postData['description'], FILTER_SANITIZE_SPECIAL_CHARS)
+            ]);
+        } else {
+            $stmt->execute(["datum" => $postData['date'],
+                "tid" => $postData['time'],
+                "aktivitetsid" => $postData['activityId'],
+                "beskrivning" => null
+            ]);
+        }
+
+        // Returnera svar
+        if ($stmt->rowCount() === 1) {
+            $id = $db->lastInsertId();
+            $retur = new stdClass();
+            $retur->id = $id;
+            $retur->message = ["Spara lyckades", "1 post lades till"];
+            return new Response($retur, 200);
+        } else {
+            $retur = new stdClass();
+            $retur->error = ["Spara misslyckades"];
+            return new Response($retur, 400);
+        }
+    } catch (Exception $e) {
+        $retur = new stdClass();
+        $retur->error = ["Spara misslyckades", $e->getMessage()];
+        return new Response($retur, 400);
+    }
 }
 
 /**
@@ -242,4 +288,64 @@ function uppdateraUppgift(string $id, array $postData): Response {
  */
 function raderaUppgift(string $id): Response {
 
+}
+
+function kontrolleraPostdata(array $postData): array {
+    $returArray = [];
+
+    // Kontrollera datum
+    if (!isset($postData['date'])) {
+        $returArray[] = "Datum saknas";
+    } else {
+        // Kontrollera att det är ett datum
+        $datum = DatetimeImmutable::createFromFormat('Y-m-d', $postData['date']);
+        if ($datum === false) {
+            $returArray[] = "Felaktigt angivet datum";
+        } else {
+            // Kontrollera att datum är giltigt
+            if ($datum->format('Y-m-d') !== $postData['date']) {
+                $returArray[] = "Ogiltigt angivet datum";
+            } else {
+                // Kontrollera att datum inte är i framtiden
+                if ($datum->format('Y-m-d') > date("Y-m-d")) {
+                    $returArray[] = "Datum får inte vara i framtiden";
+                }
+            }
+        }
+
+    }
+
+    // Kontrollera tid
+    if (!isset($postData['time'])) {
+        $returArray[] = "Tid saknas";
+    } else {
+        // Kontrollera att tiden är i rätt format
+        $tid = DatetimeImmutable::createFromFormat('H:i', $postData['time']);
+        if ($tid === false) {
+            $returArray[] = "Felaktigt angiven tid";
+        } else {
+            // Kontrollera att tiden är giltig
+            if ($tid->format('H:i') !== $postData['time']) {
+                $returArray[] = "Ogiltigt angiven tid";
+            } else {
+                // Kontrollera att inte tiden är för stor (>8h)
+                if ($tid->format('H:i') > "08:00") {
+                    $returArray[] = "Tiden får vara högst 8 timmar";
+                }
+            }
+        }
+    }
+
+
+    // Kontrollera aktivitetid
+    if (!isset($postData['activityId'])) {
+        $returArray[] = "AktivitetsId saknas";
+    } else {
+        $kontrolleradId = filter_var($postData['activityId'], FILTER_VALIDATE_INT);
+        if ($kontrolleradId === false || $kontrolleradId < 1) {
+            $returArray[] = "Ogiltigt angivet aktivitetsId";
+        }
+    }
+
+    return $returArray;
 }

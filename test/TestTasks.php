@@ -209,10 +209,31 @@ function test_HamtaEnUppgift(): string {
 function test_SparaUppgift(): string {
     $retur = "<h2>test_SparaUppgift</h2>";
 
+    $db=connectDb();
+    $db->beginTransaction();
     try {
+        $post=["date"=>"2025-01-01", "time"=>"01:30", "activityId"=>1, "description"=>"Beskrivning"];
+        // Lyckas med att spara komplett post
+        $svar=sparaNyUppgift($post);
+        if($svar->getStatus() === 200){
+            $retur .="<p class='ok'>Spara ny uppgift lyckades</p>";
+        } else {
+            $retur  .="<p class='error'>Spara ny uppgift misslyckades, 
+                    status=" .$svar->getStatus() ." returnerades </p>";
+        }
+
+        // Misslyckas med att spara fel datum (1)
+
+        // Misslyckas med att spara fel datum ("igår")
+
+        // Misslyckas med att spara ogiltigt (2023-13-37)
+
+        // Misslyckas med att spara datum i framtiden (i morgon)
         $retur .= "<p class='error'>Inga tester implementerade</p>";
     } catch (Exception $ex) {
         $retur .= "<p class='error'>Något gick fel, meddelandet säger:<br> {$ex->getMessage()}</p>";
+    } finally {
+        $db->rollback();
     }
 
     return $retur;
