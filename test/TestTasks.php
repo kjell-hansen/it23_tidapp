@@ -170,6 +170,8 @@ function test_HamtaAllaUppgifterDatum(): string {
 function test_HamtaEnUppgift(): string {
     $retur = "<h2>test_HamtaEnUppgift</h2>";
 
+    $db=connectDb();
+    $db->beginTransaction();
     try {
         // Misslyckas med att hämta felaktigt id (-1)
         $svar=hamtaEnskildUppgift("-1");
@@ -189,14 +191,34 @@ function test_HamtaEnUppgift(): string {
                 . $svar->getStatus() . " returnerades</p>";
         }
 
-        // Lyckas med att hämta post som finns
+        // Lyckas med att hämta post som finns => skapa en ny post och hämta posten med det id't
+        $post=["date"=>"2025-01-01", "time"=>"01:30", "activityId"=>1, "description"=>"Beskrivning"];
+        $spara=sparaNyUppgift($post);
+        if($spara->getStatus() !== 200){
+            $retur .="<p class='error'>Kunde inte skapa ny post för att testa läsning, avbryter!</p>";
+            return $retur;
+        }
+        $nyttId=$spara->getContent()->id;
+        $svar=hamtaEnskildUppgift((string) $nyttId);
+        if($svar->getStatus() === 200){
+            $retur .="<p class='ok'>Hämta enskild post lyckades</p>";
+        } else {
+            $retur .="<p class='error'>Hämta enskild post som nyss skapats misslyckades, status="
+                . $svar->getStatus() . " returnerades</p>";
+        }
 
         // Misslyckas med att hämta post som inte finns
-
-
-        $retur .= "<p class='error'>Övriga tester inte implementerade</p>";
+        $svar=hamtaEnskildUppgift((string) ($nyttId+1));
+        if($svar->getStatus() === 400){
+            $retur .="<p class='ok'>Hämta uppgift som inte finns misslyckades, som förväntat</p>";
+        } else {
+            $retur .="<p class='error'>Hämta uppgift som inte finns misslyckades, status="
+                . $svar->getStatus() . " returnerades</p>";
+        }
     } catch (Exception $ex) {
         $retur .= "<p class='error'>Något gick fel, meddelandet säger:<br> {$ex->getMessage()}</p>";
+    } finally {
+        $db->rollback();
     }
 
     return $retur;
