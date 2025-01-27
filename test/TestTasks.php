@@ -98,7 +98,7 @@ function test_HamtaAllaUppgifterDatum(): string {
             $retur .= "<p class='error'>Hämta uppgifter med felaktiga datum (1,2025-01-01) misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
         }
 
-    $svar = hamtaDatum("2025-01-01","1");
+        $svar = hamtaDatum("2025-01-01", "1");
         if ($svar->getStatus() === 400) {
             if (count($svar->getContent()->error) === 2) {
                 $retur .= "<p class='ok'>Hämta uppgifter med felaktiga datum (2025-01-01,1) misslyckades som förväntat</p>";
@@ -111,7 +111,7 @@ function test_HamtaAllaUppgifterDatum(): string {
         }
 
         // Testa ogiltiga datum
-    $svar = hamtaDatum("2025-01-01","2025-01-37");
+        $svar = hamtaDatum("2025-01-01", "2025-01-37");
         if ($svar->getStatus() === 400) {
             if (count($svar->getContent()->error) === 2) {
                 $retur .= "<p class='ok'>Hämta uppgifter med felaktiga datum (2025-01-01,2025-01-37) misslyckades som förväntat</p>";
@@ -123,7 +123,7 @@ function test_HamtaAllaUppgifterDatum(): string {
             $retur .= "<p class='error'>Hämta uppgifter med felaktiga datum (2025-01-01,2025-01-37) misslyckades, status=" . $svar->getStatus() . " returnerades</p>";
         }
 
-    $svar = hamtaDatum("2024-12-37","2025-01-27");
+        $svar = hamtaDatum("2024-12-37", "2025-01-27");
         if ($svar->getStatus() === 400) {
             if (count($svar->getContent()->error) === 2) {
                 $retur .= "<p class='ok'>Hämta uppgifter med felaktiga datum (2024-12-37,2025-01-27) misslyckades som förväntat</p>";
@@ -136,7 +136,7 @@ function test_HamtaAllaUppgifterDatum(): string {
         }
 
         // Testa från större än till
-    $svar = hamtaDatum("2025-12-27","2025-01-27");
+        $svar = hamtaDatum("2025-12-27", "2025-01-27");
         if ($svar->getStatus() === 400) {
             if (count($svar->getContent()->error) === 2) {
                 $retur .= "<p class='ok'>Hämta uppgifter med felaktiga datum (2025-12-27,2025-01-27) misslyckades som förväntat</p>";
@@ -149,11 +149,11 @@ function test_HamtaAllaUppgifterDatum(): string {
         }
 
         // Testa korrekta datum
-        $svar=hamtaDatum("2024-01-01","2025-01-01");
-        if($svar->getStatus() === 200){
-            $retur .="<p class='ok'>Hämta uppgifter med datum (2024-01-01,2025-01-01) lyckades</p>";
+        $svar = hamtaDatum("2024-01-01", "2025-01-01");
+        if ($svar->getStatus() === 200) {
+            $retur .= "<p class='ok'>Hämta uppgifter med datum (2024-01-01,2025-01-01) lyckades</p>";
         } else {
-            $retur .="<p class='error'>Hämta uppgifter med datum (2024-01-01,2025-01-01) misslyckades"
+            $retur .= "<p class='error'>Hämta uppgifter med datum (2024-01-01,2025-01-01) misslyckades"
                 . ", status=" . $svar->getStatus() . " returnerades</p>";
         }
     } catch (Exception $ex) {
@@ -170,49 +170,49 @@ function test_HamtaAllaUppgifterDatum(): string {
 function test_HamtaEnUppgift(): string {
     $retur = "<h2>test_HamtaEnUppgift</h2>";
 
-    $db=connectDb();
+    $db = connectDb();
     $db->beginTransaction();
     try {
         // Misslyckas med att hämta felaktigt id (-1)
-        $svar=hamtaEnskildUppgift("-1");
-        if($svar->getStatus() === 400){
-            $retur .="<p class='ok'>Hämta post med felaktigt id (-1) misslyckades, som förväntat</p>";
+        $svar = hamtaEnskildUppgift("-1");
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Hämta post med felaktigt id (-1) misslyckades, som förväntat</p>";
         } else {
-            $retur .="<p class='error'>Hämta post med felatkigt id (-1) misslyckades, status="
+            $retur .= "<p class='error'>Hämta post med felatkigt id (-1) misslyckades, status="
                 . $svar->getStatus() . " returnerades</p>";
         }
 
         // Misslyckas med att hämta felaktigt id (sju)
-        $svar=hamtaEnskildUppgift("sju");
-        if($svar->getStatus() === 400){
-            $retur .="<p class='ok'>Hämta post med felaktigt id (sju) misslyckades, som förväntat</p>";
+        $svar = hamtaEnskildUppgift("sju");
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Hämta post med felaktigt id (sju) misslyckades, som förväntat</p>";
         } else {
-            $retur .="<p class='error'>Hämta post med felatkigt id (sju) misslyckades, status="
+            $retur .= "<p class='error'>Hämta post med felatkigt id (sju) misslyckades, status="
                 . $svar->getStatus() . " returnerades</p>";
         }
 
         // Lyckas med att hämta post som finns => skapa en ny post och hämta posten med det id't
-        $post=["date"=>"2025-01-01", "time"=>"01:30", "activityId"=>1, "description"=>"Beskrivning"];
-        $spara=sparaNyUppgift($post);
-        if($spara->getStatus() !== 200){
-            $retur .="<p class='error'>Kunde inte skapa ny post för att testa läsning, avbryter!</p>";
+        $post = ["date" => "2025-01-01", "time" => "01:30", "activityId" => 1, "description" => "Beskrivning"];
+        $spara = sparaNyUppgift($post);
+        if ($spara->getStatus() !== 200) {
+            $retur .= "<p class='error'>Kunde inte skapa ny post för att testa läsning, avbryter!</p>";
             return $retur;
         }
-        $nyttId=$spara->getContent()->id;
-        $svar=hamtaEnskildUppgift((string) $nyttId);
-        if($svar->getStatus() === 200){
-            $retur .="<p class='ok'>Hämta enskild post lyckades</p>";
+        $nyttId = $spara->getContent()->id;
+        $svar = hamtaEnskildUppgift((string)$nyttId);
+        if ($svar->getStatus() === 200) {
+            $retur .= "<p class='ok'>Hämta enskild post lyckades</p>";
         } else {
-            $retur .="<p class='error'>Hämta enskild post som nyss skapats misslyckades, status="
+            $retur .= "<p class='error'>Hämta enskild post som nyss skapats misslyckades, status="
                 . $svar->getStatus() . " returnerades</p>";
         }
 
         // Misslyckas med att hämta post som inte finns
-        $svar=hamtaEnskildUppgift((string) ($nyttId+1));
-        if($svar->getStatus() === 400){
-            $retur .="<p class='ok'>Hämta uppgift som inte finns misslyckades, som förväntat</p>";
+        $svar = hamtaEnskildUppgift((string)($nyttId + 1));
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Hämta uppgift som inte finns misslyckades, som förväntat</p>";
         } else {
-            $retur .="<p class='error'>Hämta uppgift som inte finns misslyckades, status="
+            $retur .= "<p class='error'>Hämta uppgift som inte finns misslyckades, status="
                 . $svar->getStatus() . " returnerades</p>";
         }
     } catch (Exception $ex) {
@@ -231,27 +231,143 @@ function test_HamtaEnUppgift(): string {
 function test_SparaUppgift(): string {
     $retur = "<h2>test_SparaUppgift</h2>";
 
-    $db=connectDb();
+    $db = connectDb();
     $db->beginTransaction();
     try {
-        $post=["date"=>"2025-01-01", "time"=>"01:30", "activityId"=>1, "description"=>"Beskrivning"];
+        $post = ["date" => "2025-01-01", "time" => "01:30", "activityId" => 1, "description" => "Beskrivning"];
         // Lyckas med att spara komplett post
-        $svar=sparaNyUppgift($post);
-        if($svar->getStatus() === 200){
-            $retur .="<p class='ok'>Spara ny uppgift lyckades</p>";
+        $svar = sparaNyUppgift($post);
+        if ($svar->getStatus() === 200) {
+            $retur .= "<p class='ok'>Spara ny uppgift lyckades</p>";
         } else {
-            $retur  .="<p class='error'>Spara ny uppgift misslyckades, 
-                    status=" .$svar->getStatus() ." returnerades </p>";
+            $retur .= "<p class='error'>Spara ny uppgift misslyckades, 
+                    status=" . $svar->getStatus() . " returnerades </p>";
         }
 
         // Misslyckas med att spara fel datum (1)
+        $post['date'] = "1";
+        $svar = sparaNyUppgift($post);
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Spara ny uppgift med datum=1 misslyckades, som förväntat</p>";
+        } else {
+            $retur .= "<p class='error'>Spara ny uppgift med datum=1 misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
 
         // Misslyckas med att spara fel datum ("igår")
+        $post['date'] = "igår";
+        $svar = sparaNyUppgift($post);
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Spara ny uppgift med datum='igår' misslyckades, som förväntat</p>";
+        } else {
+            $retur .= "<p class='error'>Spara ny uppgift med datum='igår' misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
 
         // Misslyckas med att spara ogiltigt (2023-13-37)
+        $post['date'] = "2023-13-37";
+        $svar = sparaNyUppgift($post);
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Spara ny uppgift med datum=2023-13-37 misslyckades, som förväntat</p>";
+        } else {
+            $retur .= "<p class='error'>Spara ny uppgift med datum=2023-13-37 misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
 
         // Misslyckas med att spara datum i framtiden (i morgon)
-        $retur .= "<p class='error'>Inga tester implementerade</p>";
+        $post['date'] = date('Y-m-d', strtotime("tomorrow"));
+        $svar = sparaNyUppgift($post);
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Spara ny uppgift med datum={$post['date']} misslyckades, som förväntat</p>";
+        } else {
+            $retur .= "<p class='error'>Spara ny uppgift med datum={$post['date']} misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
+
+        // Återställ datum
+        $post['date'] = date('Y-m-d', strtotime("yesterday"));
+
+        // Testa spara med tid=1
+        $post['time'] = "1";
+        $svar = sparaNyUppgift($post);
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Spara ny uppgift med tid={$post['time']} misslyckades, som förväntat</p>";
+        } else {
+            $retur .= "<p class='error'>Spara ny uppgift med tid={$post['time']} misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
+
+        // Testa spara med tid="en kvart"
+        $post['time'] = "en kvart";
+        $svar = sparaNyUppgift($post);
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Spara ny uppgift med tid={$post['time']} misslyckades, som förväntat</p>";
+        } else {
+            $retur .= "<p class='error'>Spara ny uppgift med tid={$post['time']} misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
+
+        // Testa spara med felaktigt formatterad tid (04:75)
+        $post['time'] = "04:75";
+        $svar = sparaNyUppgift($post);
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Spara ny uppgift med tid={$post['time']} misslyckades, som förväntat</p>";
+        } else {
+            $retur .= "<p class='error'>Spara ny uppgift med tid={$post['time']} misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
+
+        // Testa spara för lång tid (10:00)
+        $post['time'] = "10:00";
+        $svar = sparaNyUppgift($post);
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Spara ny uppgift med tid={$post['time']} misslyckades, som förväntat</p>";
+        } else {
+            $retur .= "<p class='error'>Spara ny uppgift med tid={$post['time']} misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
+        // Återställ tid
+        $post['time'] = "02:00";
+
+        // Testa spara med aktivitetId=0
+        $post['activityId'] = "0";
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Spara ny uppgift med aktivitetsId={$post['activityId']} misslyckades, som förväntat</p>";
+        } else {
+            $retur .= "<p class='error'>Spara ny uppgift med aktivitetsId={$post['activityId']} misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
+
+        // Testa spara med aktivitetId="tre"
+        $post['activityId'] = "tre";
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Spara ny uppgift med aktivitetsId={$post['activityId']} misslyckades, som förväntat</p>";
+        } else {
+            $retur .= "<p class='error'>Spara ny uppgift med aktivitetsId={$post['activityId']} misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
+
+        // Testa spara med aktivitetId=30000 (som troligen inte finns)
+        $post['activityId'] = "30000";
+        if ($svar->getStatus() === 400) {
+            $retur .= "<p class='ok'>Spara ny uppgift med aktivitetsId={$post['activityId']} misslyckades, som förväntat</p>";
+        } else {
+            $retur .= "<p class='error'>Spara ny uppgift med aktivitetsId={$post['activityId']} misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
+
+        // Återställ aktivitetId
+        $post['activityId'] = "1";
+
+        // Spara post utan beskrivning
+        unset($post['description']);
+        $svar = sparaNyUppgift($post);
+        if ($svar->getStatus() === 200) {
+            $retur .= "<p class='ok'>Spara post utan beskrivning lyckades";
+        } else {
+            $retur .= "<p class='error'>Spara post utan beskrivning misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
     } catch (Exception $ex) {
         $retur .= "<p class='error'>Något gick fel, meddelandet säger:<br> {$ex->getMessage()}</p>";
     } finally {
