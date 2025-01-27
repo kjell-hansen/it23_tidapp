@@ -384,10 +384,98 @@ function test_SparaUppgift(): string {
 function test_UppdateraUppgifter(): string {
     $retur = "<h2>test_UppdateraUppgifter</h2>";
 
+    $db = connectDB();
+    $db->beginTransaction();
     try {
+        // Skapa ny post som används för uppdateringstesterna
+        $post = ["date" => date('Y-m-d'), "time" => "01:30", "activityId" => 1, "description" => "Beskrivning"];
+        $testPost = sparaNyUppgift($post);
+        if ($testPost->getStatus() !== 200) {
+            $retur .= "<p class='error'>Misslyckades med att skapa test-post i uppgifter, avbryter</p>";
+            return $retur;
+        }
+
+        // Datum-tester som ska misslyckas:
+        // "1", "igår", "2023-13-37", imorgon
+        $testDates = ["1", "igår", "2023-13-37", date('Y-m-d', strtotime("tomorrow"))];
+        foreach ($testDates as $date) {
+            $post["date"] = $date;
+            $svar = uppdateraUppgift((string)$testPost->getContent()->id, $post);
+            if ($svar->getStatus() === 400) {
+                $retur .= "<p class='ok'>Uppdatera uppgift med datum={$post['date']} misslyckades, som förväntat</p>";
+            } else {
+                $retur .= "<p class='error'>Uppdatera uppgift med datum={$post['date']} misslyckades, status="
+                    . $svar->getStatus() . " returnerades </p>";
+            }
+        }
+        // Återställ datum
+        $post["date"] = date("Y-m-d");
+
+        // Tidstester som ska misslyckas:
+        // "1", "en kvart", "01:75", "10:30"
+        $testTimes = ["1", "en kvart", "01:75", "10:30"];
+        foreach ($testTimes as $time) {
+            $post["time"] = $time;
+            $svar = uppdateraUppgift((string)$testPost->getContent()->id, $post);
+            if ($svar->getStatus() === 400) {
+                $retur .= "<p class='ok'>Uppdatera uppgift med tid={$post['time']} misslyckades, som förväntat</p>";
+            } else {
+                $retur .= "<p class='error'>Uppdatera uppgift med tid={$post['time']} misslyckades, status="
+                    . $svar->getStatus() . " returnerades </p>";
+            }
+        }
+        // Återställ tid
+        $post["time"] = "01:30";
+
+        // Tester för aktivitetsid som ska misslyckas
+        // "0", "tre", "123456"
+        $testActivities = ["0", "tre", "123456"];
+        foreach ($testActivities as $act) {
+            $post["activityId"] = $act;
+            $svar = uppdateraUppgift((string)$testPost->getContent()->id, $post);
+            if ($svar->getStatus() === 400) {
+                $retur .= "<p class='ok'>Uppdatera uppgift med aktivitet={$post['activityId']} misslyckades, som förväntat</p>";
+            } else {
+                $retur .= "<p class='error'>Uppdatera uppgift med aktivitet={$post['activityId']} misslyckades, status="
+                    . $svar->getStatus() . " returnerades </p>";
+            }
+        }
+        // Återställ aktivitetsid
+        $post["activityId"] = "1";
+
+        // Testa att uppdatera en uppgift som finns funkar
+        unset($post['description']);
+        $svar=uppdateraUppgift((string)$testPost->getContent()->id, $post);
+        if($svar->getStatus() === 200){
+            if($svar->getContent()->result){
+                $retur .="<p class='ok'>Uppdatera en uppgift med borttagen beskrivning funkar</p>";
+            } else{
+                $retur .="<p class='error'>Uppdatera en uppgift med borttagen beskrivning misslyckades, result=false returnerades </p>";
+            }
+        } else {
+            $retur .="<p class='error'>Uppdatera en uppgift med borttagen beskrivning misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
+
+        // Testa att uppdatera samma aktivitet igen ger result=false
+        $svar=uppdateraUppgift((string)$testPost->getContent()->id, $post);
+        if($svar->getStatus() === 200){
+            if($svar->getContent()->result===false){
+                $retur .="<p class='ok'>Uppdatera en uppgift med samma innehåll funkar</p>";
+            } else{
+                $retur .="<p class='error'>Uppdatera en uppgift med samma innehåll misslyckades, result=true returnerades </p>";
+            }
+        } else {
+            $retur .="<p class='error'>Uppdatera en uppgift med samma innehåll misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
+
+
         $retur .= "<p class='error'>Inga tester implementerade</p>";
     } catch (Exception $ex) {
         $retur .= "<p class='error'>Något gick fel, meddelandet säger:<br> {$ex->getMessage()}</p>";
+    } finally {
+        $db->rollback();
     }
 
     return $retur;

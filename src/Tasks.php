@@ -278,7 +278,66 @@ function sparaNyUppgift(array $postData): Response {
  * @return Response
  */
 function uppdateraUppgift(string $id, array $postData): Response {
+    // Kontrollera indata
+    $kontrolleradId = filter_var($id, FILTER_SANITIZE_NUMBER_INT);
+    if ($kontrolleradId === false || $kontrolleradId < 1) {
+        $retur = new stdClass();
+        $retur->error = ["Bad request", "Felaktigt angivet id"];
+        return new Response($retur, 400);
+    }
 
+    $koll = kontrolleraPostdata($postData);
+    if ($koll) {
+        $retur = new stdClass();
+        array_unshift($koll, "Bad request");
+        $retur->error = $koll;
+        return new Response($retur, 400);
+    }
+
+    // Koppla databas
+    $db = connectDb();
+
+    try {
+        // Skicka fråga
+        $stmt = $db->prepare("UPDATE uppgifter SET 
+                     datum=:datum, 
+                     tid=:tid,
+                     aktivitetsid=:aktivitetsid,
+                     beskrivning=:beskrivning
+                     WHERE id=:id");
+
+        if (isset($postData['description'])) {
+            $stmt->execute(["datum" => $postData['date'],
+                "tid" => $postData['time'],
+                "aktivitetsid" => $postData['activityId'],
+                "beskrivning" => filter_var($postData['description'], FILTER_SANITIZE_SPECIAL_CHARS),
+                "id" => $id
+            ]);
+        } else {
+            $stmt->execute(["datum" => $postData['date'],
+                "tid" => $postData['time'],
+                "aktivitetsid" => $postData['activityId'],
+                "beskrivning" => null,
+                "id" => $id
+            ]);
+        }
+
+        // Kontrollera svar
+        $retur = new stdClass();
+        if ($stmt->rowCount() === 1) {
+            $retur->result = true;
+            $retur->message = ["Uppdatera lyckades", "1 post uppdaterades"];
+        } else {
+            $retur->result = false;
+            $retur->message = ["Uppdatera misslyckades", "Ingen post uppdaterades"];
+        }
+
+        return new Response($retur, 200);
+    } catch (Exception $e) {
+        $retur = new stdClass();
+        $retur->error = ["Något gick fel", $e->getMessage()];
+        return new Response($retur, 400);
+    }
 }
 
 /**
