@@ -445,49 +445,34 @@ function test_UppdateraUppgifter(): string {
 
         // Testa att uppdatera en uppgift som finns funkar
         unset($post['description']);
-        $svar=uppdateraUppgift((string)$testPost->getContent()->id, $post);
-        if($svar->getStatus() === 200){
-            if($svar->getContent()->result){
-                $retur .="<p class='ok'>Uppdatera en uppgift med borttagen beskrivning funkar</p>";
-            } else{
-                $retur .="<p class='error'>Uppdatera en uppgift med borttagen beskrivning misslyckades, result=false returnerades </p>";
+        $svar = uppdateraUppgift((string)$testPost->getContent()->id, $post);
+        if ($svar->getStatus() === 200) {
+            if ($svar->getContent()->result) {
+                $retur .= "<p class='ok'>Uppdatera en uppgift med borttagen beskrivning funkar</p>";
+            } else {
+                $retur .= "<p class='error'>Uppdatera en uppgift med borttagen beskrivning misslyckades, result=false returnerades </p>";
             }
         } else {
-            $retur .="<p class='error'>Uppdatera en uppgift med borttagen beskrivning misslyckades, status="
+            $retur .= "<p class='error'>Uppdatera en uppgift med borttagen beskrivning misslyckades, status="
                 . $svar->getStatus() . " returnerades </p>";
         }
 
         // Testa att uppdatera samma aktivitet igen ger result=false
-        $svar=uppdateraUppgift((string)$testPost->getContent()->id, $post);
-        if($svar->getStatus() === 200){
-            if($svar->getContent()->result===false){
-                $retur .="<p class='ok'>Uppdatera en uppgift med samma innehåll funkar</p>";
-            } else{
-                $retur .="<p class='error'>Uppdatera en uppgift med samma innehåll misslyckades, result=true returnerades </p>";
+        $svar = uppdateraUppgift((string)$testPost->getContent()->id, $post);
+        if ($svar->getStatus() === 200) {
+            if ($svar->getContent()->result === false) {
+                $retur .= "<p class='ok'>Uppdatera en uppgift med samma innehåll funkar</p>";
+            } else {
+                $retur .= "<p class='error'>Uppdatera en uppgift med samma innehåll misslyckades, result=true returnerades </p>";
             }
         } else {
-            $retur .="<p class='error'>Uppdatera en uppgift med samma innehåll misslyckades, status="
+            $retur .= "<p class='error'>Uppdatera en uppgift med samma innehåll misslyckades, status="
                 . $svar->getStatus() . " returnerades </p>";
         }
-
-
-        $retur .= "<p class='error'>Inga tester implementerade</p>";
     } catch (Exception $ex) {
         $retur .= "<p class='error'>Något gick fel, meddelandet säger:<br> {$ex->getMessage()}</p>";
     } finally {
         $db->rollback();
-    }
-
-    return $retur;
-}
-
-function test_KontrolleraIndata(): string {
-    $retur = "<h2>test_KontrolleraIndata</h2>";
-
-    try {
-        $retur .= "<p class='error'>Inga tester implementerade</p>";
-    } catch (Exception $ex) {
-        $retur .= "<p class='error'>Något gick fel, meddelandet säger:<br> {$ex->getMessage()}</p>";
     }
 
     return $retur;
@@ -500,10 +485,59 @@ function test_KontrolleraIndata(): string {
 function test_RaderaUppgift(): string {
     $retur = "<h2>test_RaderaUppgift</h2>";
 
+    // Skapa transaktion för att undvika att databasen får onödiga testrader
+    $db=connectDb();
+    $db->beginTransaction();
+
     try {
-        $retur .= "<p class='error'>Inga tester implementerade</p>";
+        // Misslyckas med att radera poster med id:
+        // "-1", "sjuttio3", "tolv"
+        $testId = ["-1", "sjuttio3", "tolv"];
+        foreach ($testId as $id) {
+            $svar = raderaUppgift($id);
+            if ($svar->getStatus() === 400) {
+                $retur .= "<p class='ok'>Radera uppgift med id=$id misslyckades, som förväntat</p>";
+            } else {
+                $retur .= "<p class='error'>Radera uppgift med id=$id misslyckades, status="
+                    . $svar->getStatus() . " returnerades </p>";
+            }
+        }
+
+        // Lyckas radera post som finns
+        $post = ["date" => date('Y-m-d'), "time" => "01:30", "activityId" => 1, "description" => "Beskrivning"];
+        $nyPost = sparaNyUppgift($post);
+        if ($nyPost->getStatus() !== 200) {
+            $retur .= "<p class='error'>Skapa post som kan raderas misslyckades. Avbryter!</p>";
+            return $retur;
+        }
+        $svar = raderaUppgift((string)$nyPost->getContent()->id);
+        if ($svar->getStatus() === 200) {
+            if ($svar->getContent()->result === true) {
+                $retur .= "<p class='ok'>Radera uppgift som nyss skapats lyckades</p>";
+            } else {
+                $retur .= "<p class='error'>Radera uppgift misslyckades, result=false returnerades </p>";
+            }
+        } else {
+            $retur .= "<p class='error>Radera uppgift som misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
+
+        // Misslyckas med att radera post som inte finns
+        $svar = raderaUppgift((string)$nyPost->getContent()->id);
+        if ($svar->getStatus() === 200) {
+            if ($svar->getContent()->result === false) {
+                $retur .= "<p class='ok'>Radera uppgift som nyss raderats lyckades</p>";
+            } else {
+                $retur .= "<p class='error'>Radera uppgift som nyss raderats misslyckades, result=true returnerades </p>";
+            }
+        } else {
+            $retur .= "<p class='error'>Radera uppgift som nyss raderats misslyckades, status="
+                . $svar->getStatus() . " returnerades </p>";
+        }
     } catch (Exception $ex) {
         $retur .= "<p class='error'>Något gick fel, meddelandet säger:<br> {$ex->getMessage()}</p>";
+    } finally {
+        $db->rollback();
     }
 
     return $retur;

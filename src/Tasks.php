@@ -179,7 +179,7 @@ function hamtaDatum(string $from, string $tom): Response {
  */
 function hamtaEnskildUppgift(string $id): Response {
     // Kontrollera indata
-    $kontrolleradId = filter_var($id, FILTER_SANITIZE_NUMBER_INT);
+    $kontrolleradId = filter_var($id, FILTER_VALIDATE_INT);
     if ($kontrolleradId === false || $kontrolleradId < 1) {
         $retur = new stdClass();
         $retur->error = ["Bad request", "Felaktigt angivet id"];
@@ -279,7 +279,7 @@ function sparaNyUppgift(array $postData): Response {
  */
 function uppdateraUppgift(string $id, array $postData): Response {
     // Kontrollera indata
-    $kontrolleradId = filter_var($id, FILTER_SANITIZE_NUMBER_INT);
+    $kontrolleradId = filter_var($id, FILTER_VALIDATE_INT);
     if ($kontrolleradId === false || $kontrolleradId < 1) {
         $retur = new stdClass();
         $retur->error = ["Bad request", "Felaktigt angivet id"];
@@ -346,7 +346,31 @@ function uppdateraUppgift(string $id, array $postData): Response {
  * @return Response
  */
 function raderaUppgift(string $id): Response {
+    // Kontrollera indata
+    $kontrolleradId = filter_var($id, FILTER_VALIDATE_INT);
+    if ($kontrolleradId === false || $kontrolleradId < 1) {
+        $retur = new stdClass();
+        $retur->error = ["Bad request", "Felaktigt angivet id"];
+        return new Response($retur, 400);
+    }
 
+    // Koppla databas
+    $db = connectDb();
+
+    // Skicka fråga
+    $stmt = $db->prepare("DELETE FROM uppgifter WHERE id=:id");
+    $stmt->execute(["id" => $kontrolleradId]);
+
+    // Returnera svar
+    $retur = new stdClass();
+    if ($stmt->rowCount() === 1) {
+        $retur->result = true;
+        $retur->message = ["Radera lyckades", "1 post raderades"];
+    } else {
+        $retur->result = false;
+        $retur->message = ["Radera misslyckades", "Ingen post raderades"];
+    }
+    return new Response($retur, 200);
 }
 
 function kontrolleraPostdata(array $postData): array {
